@@ -431,6 +431,7 @@ export const enum WORKFLOW_MENU_ACTIONS {
 	IMPORT_FROM_FILE = 'import-from-file',
 	SETTINGS = 'settings',
 	DELETE = 'delete',
+	VIEW_WORKFLOW_VERSIONS = 'view-workflow-versions',
 }
 
 /**
