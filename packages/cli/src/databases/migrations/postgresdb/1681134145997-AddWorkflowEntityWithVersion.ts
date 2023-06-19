@@ -2,17 +2,17 @@ import type { MigrationContext, ReversibleMigration } from '@db/types';
 
 export class AddWorkflowEntityWithVersion1681134145997 implements ReversibleMigration {
 	async up({ queryRunner, tablePrefix, schemaPrefix }: MigrationContext) {
-		// Create a new table that behaves like workflow entity
+		// Create a new table that behaves like workflow_entity
 		await queryRunner.query(
 			`CREATE TABLE ${tablePrefix}workflow_entity_with_version (LIKE ${tablePrefix}workflow_entity)`,
 		);
 
-		// Add a unique constraint to avoid duplicate data
+		// Add a unique constraint to avoid duplicated data
 		await queryRunner.query(
 			`ALTER TABLE ${tablePrefix}workflow_entity_with_version ADD CONSTRAINT unique_version_id UNIQUE ("versionId")`,
 		);
 
-		// Create a function that inserting every row to workflow_entity_with_version
+		// Create a function that is inserting every row from workflow_entity to workflow_entity_with_version
 		await queryRunner.query(
 			`CREATE FUNCTION ${tablePrefix}duplicate_data_function()
 			RETURNS TRIGGER AS $$
@@ -23,7 +23,7 @@ export class AddWorkflowEntityWithVersion1681134145997 implements ReversibleMigr
 			$$ LANGUAGE plpgsql;`,
 		);
 
-		// Create a insertion trigger
+		// Create an insertion trigger
 		await queryRunner.query(
 			`CREATE TRIGGER duplicate_insert_trigger
 			AFTER INSERT ON ${tablePrefix}workflow_entity
