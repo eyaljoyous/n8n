@@ -433,5 +433,5 @@ export declare namespace VariablesRequest {
 //
 export declare namespace WorkflowWithVersionRequest {
 	type GetAll = AuthenticatedRequest;
-	type Get = AuthenticatedRequest<{ id: string }, {}, {}, {}>;
+	type Get = AuthenticatedRequest<{ id: string }, {}, {}, { versionId?: string }>;
 }

@@ -11,4 +11,13 @@ export class WorkflowsWithVersionService {
 			where: { id },
 		});
 	}
+
+	static async getOneForWorkflowAndVersion(
+		id: string,
+		versionId: string,
+	): Promise<WorkflowEntityWithVersion[]> {
+		return collections.WorkflowWithVersion.find({
+			where: { id, versionId },
+		});
+	}
 }

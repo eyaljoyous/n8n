@@ -6,8 +6,7 @@ import { LoggerProxy } from 'n8n-workflow';
 import * as Db from '@/Db';
 import * as ResponseHelper from '@/ResponseHelper';
 import { getLogger } from '@/Logger';
-import type { WorkflowRequest, WorkflowWithVersionRequest } from '@/requests';
-import { whereClause } from '@/UserManagement/UserManagementHelper';
+import type { WorkflowWithVersionRequest } from '@/requests';
 import { WorkflowsWithVersionService } from '@/workflowsWithVersion/workflowsWithVersion.service';
 
 export const workflowsWithVersionController = express.Router();
@@ -41,6 +40,12 @@ workflowsWithVersionController.get(
 	'/:id(\\d+)',
 	ResponseHelper.send(async (req: WorkflowWithVersionRequest.Get) => {
 		const { id } = req.params;
-		return WorkflowsWithVersionService.getAllForWorkflow(id);
+		const { versionId } = req.query;
+
+		if (!versionId) {
+			return WorkflowsWithVersionService.getAllForWorkflow(id);
+		} else {
+			return WorkflowsWithVersionService.getOneForWorkflowAndVersion(id, versionId);
+		}
 	}),
 );
