@@ -64,6 +64,7 @@ import { Queue } from '@/Queue';
 import { getSharedWorkflowIds } from '@/WorkflowHelpers';
 
 import { workflowsController } from '@/workflows/workflows.controller';
+import { workflowsWithVersionController } from '@/workflowsWithVersion/workflowsWithVersion.controller';
 import {
 	EDITOR_UI_DIST_DIR,
 	GENERATED_STATIC_DIR,
@@ -607,6 +608,11 @@ export class Server extends AbstractServer {
 		// Workflow
 		// ----------------------------------------
 		this.app.use(`/${this.restEndpoint}/workflows`, workflowsController);
+
+		// ----------------------------------------
+		// Workflow with versions
+		// ----------------------------------------
+		this.app.use(`/${this.restEndpoint}/workflows-with-versions`, workflowsWithVersionController);
 
 		// ----------------------------------------
 		// License
