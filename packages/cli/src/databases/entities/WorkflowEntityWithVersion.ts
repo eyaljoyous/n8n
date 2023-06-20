@@ -7,6 +7,7 @@ import { jsonColumnType } from './AbstractEntity';
 
 @Entity()
 export class WorkflowEntityWithVersion {
+	@Column()
 	id: string;
 
 	@Column({ length: 128 })
