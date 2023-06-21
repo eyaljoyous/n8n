@@ -137,6 +137,7 @@ import {
 	WORKFLOW_MENU_ACTIONS,
 	WORKFLOW_SETTINGS_MODAL_KEY,
 	WORKFLOW_SHARE_MODAL_KEY,
+	WORKFLOW_WITH_VERSION_MODAL_KEY,
 } from '@/constants';
 
 import ShortenName from '@/components/ShortenName.vue';
@@ -558,6 +559,8 @@ export default defineComponent({
 				}
 
 				case WORKFLOW_MENU_ACTIONS.VIEW_WORKFLOW_VERSIONS: {
+					const workflowData = await this.getWorkflowWithVersion(this.currentWorkflowId);
+					this.uiStore.openModal(WORKFLOW_WITH_VERSION_MODAL_KEY);
 					break;
 				}
 				default:

@@ -27,6 +27,7 @@ export const MAX_TAG_NAME_LENGTH = 24;
 // modals
 export const ABOUT_MODAL_KEY = 'about';
 export const ASK_AI_MODAL_KEY = 'askAi';
+export const WORKFLOW_WITH_VERSION_MODAL_KEY = 'workflowWithVersion';
 export const CHANGE_PASSWORD_MODAL_KEY = 'changePassword';
 export const CREDENTIAL_EDIT_MODAL_KEY = 'editCredential';
 export const CREDENTIAL_SELECT_MODAL_KEY = 'selectCredential';

@@ -57,6 +57,8 @@
 	"askAi.dialog.title": "'Ask AI' is almost ready",
 	"askAi.dialog.body": "We’re still applying the finishing touches. Soon, you will be able to <strong>automatically generate code from simple text prompts</strong>. Join the waitlist to get early access to this feature.",
 	"askAi.dialog.signup": "Join Waitlist",
+	"viewWorkflowWithVersions.dialog.title": "Workflow versions",
+	"viewWorkflowWithVersions.dialog.body": "Versions list",
 	"activationModal.butYouCanSeeThem": "but you can see them in the",
 	"activationModal.dontShowAgain": "Don't show again",
 	"activationModal.executionList": "execution list",
