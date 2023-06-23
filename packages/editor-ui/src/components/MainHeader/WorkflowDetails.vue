@@ -559,7 +559,7 @@ export default defineComponent({
 				}
 
 				case WORKFLOW_MENU_ACTIONS.VIEW_WORKFLOW_VERSIONS: {
-					const workflowData = await this.getWorkflowWithVersion(this.currentWorkflowId);
+					// const workflowData = await this.getWorkflowWithVersion(this.currentWorkflowId);
 					this.uiStore.openModal(WORKFLOW_WITH_VERSION_MODAL_KEY);
 					break;
 				}
