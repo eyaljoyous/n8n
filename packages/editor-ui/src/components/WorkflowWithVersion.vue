@@ -95,7 +95,6 @@ export default defineComponent({
 			const workflows: IWorkflowDb[] = await workflowStore.fetchWorkflowWithVersion(workflowId);
 			this.versions = [];
 			for (const workflow of workflows.reverse()) {
-				workflow.createdAt = new Date(workflow.createdAt).toLocaleString();
 				workflow.updatedAt = new Date(workflow.updatedAt).toLocaleString();
 				this.versions.push(workflow);
 			}
