@@ -34,7 +34,7 @@
 								icon="exclamation-triangle"
 								class="clickable"
 								:title="$locale.baseText('fixedCollectionParameter.moveUp')"
-								click=""
+								@click="activateSelectedVersion(index)"
 							/>
 						</td>
 						<td v-else></td>
@@ -42,7 +42,9 @@
 				</tbody>
 			</table>
 			<section :class="$style.versions">
-				<div>Diff:</div>
+				<div v-if="versionIndexToCompare !== 0">
+					Diff with {{ versions[versionIndexToCompare].versionId }}:
+				</div>
 				<vue-json-compare
 					v-if="versionIndexToCompare > 0"
 					:oldData="versions[0]"
@@ -56,16 +58,24 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import Modal from './Modal.vue';
-import { WORKFLOW_WITH_VERSION_MODAL_KEY } from '../constants';
+import { MODAL_CONFIRM, WORKFLOW_WITH_VERSION_MODAL_KEY } from '../constants';
 import { useWorkflowsStore } from '@/stores/workflows.store';
-import type { IWorkflowDb } from '@/Interface';
+import type { IWorkflowDataUpdate, IWorkflowDb } from '@/Interface';
 import vueJsonCompare from 'vue-json-compare';
+import { useToast, useMessage, useGlobalLinkActions } from '@/composables';
 
 export default defineComponent({
 	name: 'WorkflowWithVersionModalKey',
 	components: {
 		Modal,
 		vueJsonCompare,
+	},
+	setup() {
+		return {
+			...useToast(),
+			...useMessage(),
+			...useGlobalLinkActions(),
+		};
 	},
 	data() {
 		return {
@@ -81,16 +91,51 @@ export default defineComponent({
 	methods: {
 		async getWorkflowWithVersions() {
 			const workflowStore = useWorkflowsStore();
-			const workflowId: String = workflowStore.workflowId;
+			const workflowId: string = workflowStore.workflowId;
 			const workflows: IWorkflowDb[] = await workflowStore.fetchWorkflowWithVersion(workflowId);
 			this.versions = [];
 			for (const workflow of workflows.reverse()) {
+				workflow.createdAt = new Date(workflow.createdAt).toLocaleString();
+				workflow.updatedAt = new Date(workflow.updatedAt).toLocaleString();
 				this.versions.push(workflow);
 			}
 		},
-		compareWithVersion(versionIndex: Number) {
+		compareWithVersion(versionIndex: number) {
 			this.versionIndexToCompare = versionIndex;
-			console.log(versionIndex);
+		},
+		async activateSelectedVersion(versionIndex: number) {
+			const workflowStore = useWorkflowsStore();
+			const workflowId: string = workflowStore.workflowId;
+			const workflowName: string = workflowStore.workflowName;
+			const selectedVersion = this.versions[versionIndex];
+			const deleteConfirmed = await this.confirm(
+				this.$locale.baseText('mainSidebar.confirmMessage.workflowWithVersions.message', {
+					interpolate: { workflowName, version: selectedVersion.versionId },
+				}),
+				this.$locale.baseText('mainSidebar.confirmMessage.workflowWithVersions.headline'),
+				{
+					type: 'warning',
+					confirmButtonText: this.$locale.baseText(
+						'mainSidebar.confirmMessage.workflowWithVersions.confirmButtonText',
+					),
+					cancelButtonText: this.$locale.baseText(
+						'mainSidebar.confirmMessage.workflowWithVersions.cancelButtonText',
+					),
+				},
+			);
+
+			if (deleteConfirmed !== MODAL_CONFIRM) {
+				return;
+			}
+
+			const data: IWorkflowDataUpdate = {
+				id: workflowId,
+				nodes: selectedVersion.nodes,
+				connections: selectedVersion.connections,
+				settings: selectedVersion.settings,
+			};
+			await workflowStore.updateWorkflow(workflowId, data, true);
+			window.location.reload();
 		},
 	},
 });
@@ -118,6 +163,7 @@ export default defineComponent({
 	font-size: var(--font-size-s);
 
 	th {
+		text-align: center;
 		background-color: var(--color-background-base);
 		border-top: var(--border-base);
 		border-bottom: var(--border-base);
@@ -129,6 +175,7 @@ export default defineComponent({
 	}
 
 	td {
+		text-align: center;
 		vertical-align: top;
 		padding: var(--spacing-2xs) var(--spacing-2xs) var(--spacing-2xs) var(--spacing-3xs);
 		border-bottom: var(--border-base);
@@ -151,7 +198,9 @@ export default defineComponent({
 			top: 0;
 		}
 	}
-
+	tr:hover {
+		background-color: lightgray;
+	}
 	td:nth-last-child(2):after {
 		right: -1px;
 	}

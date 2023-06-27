@@ -1,13 +1,13 @@
 import { IConnections } from 'n8n-workflow';
-import type { INode } from 'n8n-workflow';
+import type { IDataObject, INode, IWorkflowSettings } from 'n8n-workflow';
 
 import { Column, Entity, PrimaryColumn } from 'typeorm';
-import { IsDate, IsOptional } from 'class-validator';
+import { IsDate } from 'class-validator';
 
-import { jsonColumnType } from './AbstractEntity';
+import { AbstractEntity, jsonColumnType } from './AbstractEntity';
 
 @Entity()
-export class WorkflowEntityWithVersion {
+export class WorkflowEntityWithVersion extends AbstractEntity {
 	@Column()
 	id: string;
 
@@ -23,14 +23,18 @@ export class WorkflowEntityWithVersion {
 	@Column(jsonColumnType)
 	connections: IConnections;
 
+	@Column({
+		type: jsonColumnType,
+		nullable: true,
+	})
+	settings?: IWorkflowSettings;
+
+	@Column({
+		type: jsonColumnType,
+		nullable: true,
+	})
+	staticData?: IDataObject;
+
 	@PrimaryColumn({})
 	versionId: string;
-
-	@IsOptional() // ignored by validation because set at DB level
-	@IsDate()
-	createdAt: Date;
-
-	@IsOptional() // ignored by validation because set at DB level
-	@IsDate()
-	updatedAt: Date;
 }
