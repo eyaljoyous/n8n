@@ -53,12 +53,13 @@ export class ElasticSearchCoreClient {
 	cleanLargeValues = (obj: any): void => {
 		// Making sure we're not pushing to elastic large strings or images
 		// If we found a large value then we just remove it from the global json
+		const MAXIMUM_STRING_LENGTH = 1024;
 		if (typeof obj === 'object' && obj !== null) {
 			for (const key in obj) {
 				if (
 					typeof obj[key] === 'string' &&
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-					(obj[key].length > 1024 || obj[key].startsWith('data:image'))
+					(obj[key].length > MAXIMUM_STRING_LENGTH || obj[key].startsWith('data:image'))
 				) {
 					delete obj[key];
 				} else {
