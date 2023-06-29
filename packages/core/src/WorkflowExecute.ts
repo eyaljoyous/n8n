@@ -1368,7 +1368,10 @@ export class WorkflowExecute {
 
 	private async storeFullDataInElasticSearch(executionId: string, fullRunData: IRun) {
 		const client = new ElasticSearchCoreClient();
-		await client.addDocument(executionId, fullRunData.data.resultData.runData);
+		const runFilteredData: IRunData = this.removeIrrelevantData(
+			fullRunData.data.resultData.runData,
+		);
+		await client.addDocument(executionId, runFilteredData);
 	}
 
 	private storeFullDataInS3(
@@ -1438,5 +1441,33 @@ export class WorkflowExecute {
 				);
 			}
 		});
+	}
+
+	private removeIrrelevantData(runData: IRunData) {
+		Object.keys(runData).forEach((nodeRunDataKey: string) => {
+			const currentNodeData: ITaskData[] = runData[nodeRunDataKey];
+			const currentNodeDataInJson: IDataObject = currentNodeData[0].data!.main[0]![0].json;
+			if (currentNodeDataInJson) {
+				try {
+					const filteredDataInJson: IDataObject =
+						this.removeLongValuesFromObject(currentNodeDataInJson);
+					runData[nodeRunDataKey][0].data!.main[0]![0].json = filteredDataInJson;
+				} catch {}
+			}
+		});
+		return runData;
+	}
+
+	private removeLongValuesFromObject(obj: IDataObject) {
+		const OUTPUT_MAXIMUM_LENGTH = 1024;
+		for (const key in obj) {
+			if (typeof obj[key] === 'string') {
+				const value = obj[key]?.toString();
+				if (value && value.startsWith('data:image') && value.length > OUTPUT_MAXIMUM_LENGTH) {
+					delete obj[key];
+				}
+			}
+		}
+		return obj;
 	}
 }
