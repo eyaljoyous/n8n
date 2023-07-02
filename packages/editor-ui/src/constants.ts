@@ -370,6 +370,7 @@ export const enum VIEWS {
 	FAKE_DOOR = 'ComingSoon',
 	COMMUNITY_NODES = 'CommunityNodes',
 	WORKFLOWS = 'WorkflowsView',
+	WORKFLOW_VERSIONS = 'WorkflowsVersionsView',
 	WORKFLOW_EXECUTIONS = 'WorkflowExecutions',
 	USAGE = 'Usage',
 	LOG_STREAMING_SETTINGS = 'LogStreamingSettingsView',
@@ -431,6 +432,7 @@ export const enum WORKFLOW_MENU_ACTIONS {
 	IMPORT_FROM_FILE = 'import-from-file',
 	SETTINGS = 'settings',
 	DELETE = 'delete',
+	VERSIONS = 'versions',
 }
 
 /**
