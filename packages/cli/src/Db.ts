@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
-
 import { Container } from 'typedi';
 import type { DataSourceOptions as ConnectionOptions, EntityManager, LoggerOptions } from 'typeorm';
 import { DataSource as Connection } from 'typeorm';
 import type { TlsOptions } from 'tls';
-import { ErrorReporterProxy as ErrorReporter } from 'n8n-workflow';
-
+import { ApplicationError, ErrorReporterProxy as ErrorReporter } from 'n8n-workflow';
 import type { IDatabaseCollections } from '@/Interfaces';
 
 import config from '@/config';
@@ -81,7 +79,7 @@ if (!inTest) {
 }
 
 export async function transaction<T>(fn: (entityManager: EntityManager) => Promise<T>): Promise<T> {
-	return connection.transaction(fn);
+	return await connection.transaction(fn);
 }
 
 export function getConnectionOptions(dbType: DatabaseType): ConnectionOptions {
@@ -124,7 +122,7 @@ export function getConnectionOptions(dbType: DatabaseType): ConnectionOptions {
 			return getSqliteConnectionOptions();
 
 		default:
-			throw new Error(`The database "${dbType}" is currently not supported!`);
+			throw new ApplicationError('Database type currently not supported', { extra: { dbType } });
 	}
 }
 

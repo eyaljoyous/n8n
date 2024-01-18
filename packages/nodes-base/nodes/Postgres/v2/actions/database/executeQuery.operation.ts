@@ -6,13 +6,12 @@ import type {
 } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 
-import { getResolvables, updateDisplayOptions } from '@utils/utilities';
-
 import type { PgpDatabase, QueriesRunner, QueryWithValues } from '../../helpers/interfaces';
 
 import { replaceEmptyStringsByNulls } from '../../helpers/utils';
 
 import { optionsCollection } from '../common.descriptions';
+import { getResolvables, updateDisplayOptions } from '@utils/utilities';
 
 const properties: INodeProperties[] = [
 	{
@@ -63,7 +62,11 @@ export async function execute(
 
 		let values: Array<IDataObject | string> = [];
 
-		const queryReplacement = this.getNodeParameter('options.queryReplacement', i, '');
+		let queryReplacement = this.getNodeParameter('options.queryReplacement', i, '');
+
+		if (typeof queryReplacement === 'number') {
+			queryReplacement = String(queryReplacement);
+		}
 
 		if (typeof queryReplacement === 'string') {
 			const node = this.getNode();
@@ -104,5 +107,5 @@ export async function execute(
 		queries.push({ query, values });
 	}
 
-	return runQueries(queries, items, nodeOptions);
+	return await runQueries(queries, items, nodeOptions);
 }
