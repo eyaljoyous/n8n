@@ -6,19 +6,18 @@ import { Container } from 'typedi';
 import type { AuthenticatedRequest, PaginatedRequest } from '../../../types';
 import { decodeCursor } from '../services/pagination.service';
 import { License } from '@/License';
+import type { GlobalRole } from '@db/entities/User';
 
 const UNLIMITED_USERS_QUOTA = -1;
 
 export const authorize =
-	(authorizedRoles: readonly string[]) =>
+	(authorizedRoles: readonly GlobalRole[]) =>
 	(
 		req: AuthenticatedRequest,
 		res: express.Response,
 		next: express.NextFunction,
 	): express.Response | void => {
-		const { name } = req.user.globalRole;
-
-		if (!authorizedRoles.includes(name)) {
+		if (!authorizedRoles.includes(req.user.role)) {
 			return res.status(403).json({ message: 'Forbidden' });
 		}
 

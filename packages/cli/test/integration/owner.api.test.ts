@@ -2,8 +2,6 @@ import validator from 'validator';
 import type { SuperAgentTest } from 'supertest';
 
 import config from '@/config';
-import * as Db from '@/Db';
-import type { Role } from '@db/entities/Role';
 import type { User } from '@db/entities/User';
 import {
 	randomEmail,
@@ -13,19 +11,17 @@ import {
 } from './shared/random';
 import * as testDb from './shared/testDb';
 import * as utils from './shared/utils/';
+import { createUserShell } from './shared/db/users';
+import { UserRepository } from '@db/repositories/user.repository';
+import Container from 'typedi';
 
 const testServer = utils.setupTestServer({ endpointGroups: ['owner'] });
 
-let globalOwnerRole: Role;
 let ownerShell: User;
 let authOwnerShellAgent: SuperAgentTest;
 
-beforeAll(async () => {
-	globalOwnerRole = await testDb.getGlobalOwnerRole();
-});
-
 beforeEach(async () => {
-	ownerShell = await testDb.createUserShell(globalOwnerRole);
+	ownerShell = await createUserShell('global:owner');
 	authOwnerShellAgent = testServer.authAgentFor(ownerShell);
 	config.set('userManagement.isInstanceOwnerSetUp', false);
 });
@@ -53,10 +49,11 @@ describe('POST /owner/setup', () => {
 			firstName,
 			lastName,
 			personalizationAnswers,
-			globalRole,
+			role,
 			password,
 			isPending,
 			apiKey,
+			globalScopes,
 		} = response.body.data;
 
 		expect(validator.isUUID(id)).toBe(true);
@@ -66,11 +63,11 @@ describe('POST /owner/setup', () => {
 		expect(personalizationAnswers).toBeNull();
 		expect(password).toBeUndefined();
 		expect(isPending).toBe(false);
-		expect(globalRole.name).toBe('owner');
-		expect(globalRole.scope).toBe('global');
+		expect(role).toBe('global:owner');
 		expect(apiKey).toBeUndefined();
+		expect(globalScopes).not.toHaveLength(0);
 
-		const storedOwner = await Db.collections.User.findOneByOrFail({ id });
+		const storedOwner = await Container.get(UserRepository).findOneByOrFail({ id });
 		expect(storedOwner.password).not.toBe(newOwnerData.password);
 		expect(storedOwner.email).toBe(newOwnerData.email);
 		expect(storedOwner.firstName).toBe(newOwnerData.firstName);
@@ -100,7 +97,7 @@ describe('POST /owner/setup', () => {
 		expect(id).toBe(ownerShell.id);
 		expect(email).toBe(newOwnerData.email.toLowerCase());
 
-		const storedOwner = await Db.collections.User.findOneByOrFail({ id });
+		const storedOwner = await Container.get(UserRepository).findOneByOrFail({ id });
 		expect(storedOwner.email).toBe(newOwnerData.email.toLowerCase());
 	});
 

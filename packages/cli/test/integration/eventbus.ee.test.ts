@@ -3,9 +3,6 @@ import axios from 'axios';
 import syslog from 'syslog-client';
 import { v4 as uuid } from 'uuid';
 import type { SuperAgentTest } from 'supertest';
-import * as utils from './shared/utils';
-import * as testDb from './shared/testDb';
-import type { Role } from '@db/entities/Role';
 import type { User } from '@db/entities/User';
 import type {
 	MessageEventBusDestinationSentryOptions,
@@ -24,6 +21,11 @@ import type { MessageEventBusDestinationWebhook } from '@/eventbus/MessageEventB
 import type { MessageEventBusDestinationSentry } from '@/eventbus/MessageEventBusDestination/MessageEventBusDestinationSentry.ee';
 import { EventMessageAudit } from '@/eventbus/EventMessageClasses/EventMessageAudit';
 import type { EventNamesTypes } from '@/eventbus/EventMessageClasses';
+import { EventMessageWorkflow } from '@/eventbus/EventMessageClasses/EventMessageWorkflow';
+import { EventMessageNode } from '@/eventbus/EventMessageClasses/EventMessageNode';
+
+import * as utils from './shared/utils';
+import { createUser } from './shared/db/users';
 
 jest.unmock('@/eventbus/MessageEventBus/MessageEventBus');
 jest.mock('axios');
@@ -31,7 +33,6 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 jest.mock('syslog-client');
 const mockedSyslog = syslog as jest.Mocked<typeof syslog>;
 
-let globalOwnerRole: Role;
 let owner: User;
 let authOwnerAgent: SuperAgentTest;
 
@@ -81,17 +82,15 @@ const testServer = utils.setupTestServer({
 });
 
 beforeAll(async () => {
-	globalOwnerRole = await testDb.getGlobalOwnerRole();
-	owner = await testDb.createUser({ globalRole: globalOwnerRole });
+	owner = await createUser({ role: 'global:owner' });
 	authOwnerAgent = testServer.authAgentFor(owner);
 
 	mockedSyslog.createClient.mockImplementation(() => new syslog.Client());
 
-	await utils.initEncryptionKey();
 	config.set('eventBus.logWriter.logBaseName', 'n8n-test-logwriter');
 	config.set('eventBus.logWriter.keepLogCount', 1);
 
-	await eventBus.initialize();
+	await eventBus.initialize({});
 });
 
 afterAll(async () => {
@@ -111,7 +110,6 @@ test('should have logwriter log messages', async () => {
 	});
 	await eventBus.send(testMessage);
 	await new Promise((resolve) => {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		eventBus.logWriter.worker?.once('message', async (msg: { command: string; data: any }) => {
 			expect(msg.command).toBe('appendMessageToLog');
 			expect(msg.data).toBe(true);
@@ -388,4 +386,58 @@ test('DELETE /eventbus/destination delete all destinations by id', async () => {
 	);
 
 	expect(Object.keys(eventBus.destinations).length).toBe(0);
+});
+
+// These two tests are running very flaky on CI due to the logwriter working in a worker
+// Mocking everything on the other would defeat the purpose of even testing them... so, skipping in CI for now.
+// eslint-disable-next-line n8n-local-rules/no-skipped-tests
+test.skip('should not find unfinished executions in recovery process', async () => {
+	eventBus.logWriter?.putMessage(
+		new EventMessageWorkflow({
+			eventName: 'n8n.workflow.started',
+			payload: { executionId: '509', isManual: false },
+		}),
+	);
+	eventBus.logWriter?.putMessage(
+		new EventMessageNode({
+			eventName: 'n8n.node.started',
+			payload: { executionId: '509', nodeName: 'Set', workflowName: 'test' },
+		}),
+	);
+	eventBus.logWriter?.putMessage(
+		new EventMessageNode({
+			eventName: 'n8n.node.finished',
+			payload: { executionId: '509', nodeName: 'Set', workflowName: 'test' },
+		}),
+	);
+	eventBus.logWriter?.putMessage(
+		new EventMessageWorkflow({
+			eventName: 'n8n.workflow.success',
+			payload: { executionId: '509', success: true },
+		}),
+	);
+	const unfinishedExecutions = await eventBus.getUnfinishedExecutions();
+
+	expect(Object.keys(unfinishedExecutions)).toHaveLength(0);
+});
+
+// eslint-disable-next-line n8n-local-rules/no-skipped-tests
+test.skip('should not find unfinished executions in recovery process', async () => {
+	eventBus.logWriter?.putMessage(
+		new EventMessageWorkflow({
+			eventName: 'n8n.workflow.started',
+			payload: { executionId: '510', isManual: false },
+		}),
+	);
+	eventBus.logWriter?.putMessage(
+		new EventMessageNode({
+			eventName: 'n8n.node.started',
+			payload: { executionId: '510', nodeName: 'Set', workflowName: 'test' },
+		}),
+	);
+
+	const unfinishedExecutions = await eventBus.getUnfinishedExecutions();
+
+	expect(Object.keys(unfinishedExecutions)).toHaveLength(1);
+	expect(Object.keys(unfinishedExecutions)).toContain('510');
 });

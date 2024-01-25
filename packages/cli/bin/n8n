@@ -40,7 +40,11 @@ require('express-async-errors');
 require('source-map-support').install();
 require('reflect-metadata');
 
-require('@oclif/command')
-	.run()
-	.then(require('@oclif/command/flush'))
-	.catch(require('@oclif/errors/handle'));
+if (process.env.NODEJS_PREFER_IPV4 === 'true') {
+	require('dns').setDefaultResultOrder('ipv4first');
+}
+
+(async () => {
+	const oclif = await import('@oclif/core');
+	await oclif.execute({});
+})();

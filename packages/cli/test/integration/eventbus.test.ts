@@ -1,8 +1,7 @@
 import type { SuperAgentTest } from 'supertest';
 import * as utils from './shared/utils/';
-import * as testDb from './shared/testDb';
-import type { Role } from '@db/entities/Role';
 import type { User } from '@db/entities/User';
+import { createUser } from './shared/db/users';
 
 /**
  * NOTE: due to issues with mocking the MessageEventBus in multiple tests running in parallel,
@@ -10,7 +9,6 @@ import type { User } from '@db/entities/User';
  * The tests in this file are only checking endpoint permissions.
  */
 
-let globalOwnerRole: Role;
 let owner: User;
 let authOwnerAgent: SuperAgentTest;
 
@@ -20,8 +18,7 @@ const testServer = utils.setupTestServer({
 });
 
 beforeAll(async () => {
-	globalOwnerRole = await testDb.getGlobalOwnerRole();
-	owner = await testDb.createUser({ globalRole: globalOwnerRole });
+	owner = await createUser({ role: 'global:owner' });
 	authOwnerAgent = testServer.authAgentFor(owner);
 });
 

@@ -6,13 +6,11 @@ import {
 	Entity,
 	Index,
 	OneToMany,
-	ManyToOne,
 	PrimaryGeneratedColumn,
 	BeforeInsert,
 } from 'typeorm';
 import { IsEmail, IsString, Length } from 'class-validator';
 import type { IUser, IUserSettings } from 'n8n-workflow';
-import { Role } from './Role';
 import type { SharedWorkflow } from './SharedWorkflow';
 import type { SharedCredentials } from './SharedCredentials';
 import { NoXss } from '../utils/customValidators';
@@ -20,10 +18,17 @@ import { objectRetriever, lowerCaser } from '../utils/transformers';
 import { WithTimestamps, jsonColumnType } from './AbstractEntity';
 import type { IPersonalizationSurveyAnswers } from '@/Interfaces';
 import type { AuthIdentity } from './AuthIdentity';
+import { ownerPermissions, memberPermissions, adminPermissions } from '@/permissions/roles';
+import { hasScope, type ScopeOptions, type Scope } from '@n8n/permissions';
 
-export const MIN_PASSWORD_LENGTH = 8;
+export type GlobalRole = 'global:owner' | 'global:admin' | 'global:member';
+export type AssignableRole = Exclude<GlobalRole, 'global:owner'>;
 
-export const MAX_PASSWORD_LENGTH = 64;
+const STATIC_SCOPE_MAP: Record<GlobalRole, Scope[]> = {
+	'global:owner': ownerPermissions,
+	'global:member': memberPermissions,
+	'global:admin': adminPermissions,
+};
 
 @Entity()
 export class User extends WithTimestamps implements IUser {
@@ -68,11 +73,8 @@ export class User extends WithTimestamps implements IUser {
 	})
 	settings: IUserSettings | null;
 
-	@ManyToOne('Role', 'globalForUsers', { nullable: false })
-	globalRole: Role;
-
 	@Column()
-	globalRoleId: string;
+	role: GlobalRole;
 
 	@OneToMany('AuthIdentity', 'user')
 	authIdentities: AuthIdentity[];
@@ -123,6 +125,20 @@ export class User extends WithTimestamps implements IUser {
 
 	@AfterLoad()
 	computeIsOwner(): void {
-		this.isOwner = this.globalRole?.name === 'owner';
+		this.isOwner = this.role === 'global:owner';
+	}
+
+	get globalScopes() {
+		return STATIC_SCOPE_MAP[this.role] ?? [];
+	}
+
+	hasGlobalScope(scope: Scope | Scope[], scopeOptions?: ScopeOptions): boolean {
+		return hasScope(
+			scope,
+			{
+				global: this.globalScopes,
+			},
+			scopeOptions,
+		);
 	}
 }

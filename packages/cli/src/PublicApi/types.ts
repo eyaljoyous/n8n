@@ -3,13 +3,11 @@ import type { IDataObject, ExecutionStatus } from 'n8n-workflow';
 
 import type { User } from '@db/entities/User';
 
-import type { Role } from '@db/entities/Role';
-
 import type { WorkflowEntity } from '@db/entities/WorkflowEntity';
 
 import type { UserManagementMailer } from '@/UserManagement/email';
 
-import type { Risk } from '@/audit/types';
+import type { Risk } from '@/security-audit/types';
 
 export type AuthlessRequest<
 	RouteParams = {},
@@ -25,7 +23,6 @@ export type AuthenticatedRequest<
 	RequestQuery = {},
 > = express.Request<RouteParams, ResponseBody, RequestBody, RequestQuery> & {
 	user: User;
-	globalMemberRole?: Role;
 	mailer?: UserManagementMailer;
 };
 
