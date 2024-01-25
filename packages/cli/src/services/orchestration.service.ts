@@ -1,172 +1,121 @@
 import { Service } from 'typedi';
-import { RedisService } from './redis.service';
+import { Logger } from '@/Logger';
+import config from '@/config';
 import type { RedisServicePubSubPublisher } from './redis/RedisServicePubSubPublisher';
-import type { RedisServicePubSubSubscriber } from './redis/RedisServicePubSubSubscriber';
-import { LoggerProxy, jsonParse } from 'n8n-workflow';
-import { eventBus } from '../eventbus';
-import type { AbstractEventMessageOptions } from '../eventbus/EventMessageClasses/AbstractEventMessageOptions';
-import { getEventMessageObjectByType } from '../eventbus/EventMessageClasses/Helpers';
-import type {
-	RedisServiceCommandObject,
-	RedisServiceWorkerResponseObject,
-} from './redis/RedisServiceCommands';
-import {
-	COMMAND_REDIS_CHANNEL,
-	EVENT_BUS_REDIS_CHANNEL,
-	WORKER_RESPONSE_REDIS_CHANNEL,
-} from './redis/RedisServiceHelper';
+import type { RedisServiceBaseCommand, RedisServiceCommand } from './redis/RedisServiceCommands';
+
+import { RedisService } from './redis.service';
+import { MultiMainSetup } from './orchestration/main/MultiMainSetup.ee';
 
 @Service()
 export class OrchestrationService {
-	private initialized = false;
+	constructor(
+		private readonly logger: Logger,
+		private readonly redisService: RedisService,
+		readonly multiMainSetup: MultiMainSetup,
+	) {}
 
-	private _uniqueInstanceId = '';
+	protected isInitialized = false;
 
-	get uniqueInstanceId(): string {
-		return this._uniqueInstanceId;
+	private isMultiMainSetupLicensed = false;
+
+	setMultiMainSetupLicensed(newState: boolean) {
+		this.isMultiMainSetupLicensed = newState;
+	}
+
+	get isMultiMainSetupEnabled() {
+		return (
+			config.getEnv('executions.mode') === 'queue' &&
+			config.getEnv('multiMainSetup.enabled') &&
+			config.getEnv('generic.instanceType') === 'main' &&
+			this.isMultiMainSetupLicensed
+		);
 	}
 
 	redisPublisher: RedisServicePubSubPublisher;
 
-	redisSubscriber: RedisServicePubSubSubscriber;
+	get instanceId() {
+		return config.getEnv('redis.queueModeId');
+	}
 
-	constructor(readonly redisService: RedisService) {}
+	get isLeader() {
+		return config.getEnv('multiMainSetup.instanceType') === 'leader';
+	}
 
-	async init(uniqueInstanceId: string) {
-		this._uniqueInstanceId = uniqueInstanceId;
-		await this.initPublisher();
-		await this.initSubscriber();
-		this.initialized = true;
+	get isFollower() {
+		return config.getEnv('multiMainSetup.instanceType') !== 'leader';
+	}
+
+	sanityCheck() {
+		return this.isInitialized && config.get('executions.mode') === 'queue';
+	}
+
+	async init() {
+		if (this.isInitialized) return;
+
+		if (config.get('executions.mode') === 'queue') await this.initPublisher();
+
+		if (this.isMultiMainSetupEnabled) {
+			await this.multiMainSetup.init();
+		} else {
+			config.set('multiMainSetup.instanceType', 'leader');
+		}
+
+		this.isInitialized = true;
 	}
 
 	async shutdown() {
-		await this.redisPublisher?.destroy();
-		await this.redisSubscriber?.destroy();
+		if (!this.isInitialized) return;
+
+		if (this.isMultiMainSetupEnabled) await this.multiMainSetup.shutdown();
+
+		await this.redisPublisher.destroy();
+
+		this.isInitialized = false;
 	}
 
-	private async initPublisher() {
+	// ----------------------------------
+	//            pubsub
+	// ----------------------------------
+
+	protected async initPublisher() {
 		this.redisPublisher = await this.redisService.getPubSubPublisher();
 	}
 
-	private async initSubscriber() {
-		this.redisSubscriber = await this.redisService.getPubSubSubscriber();
+	async publish(command: RedisServiceCommand, data?: unknown) {
+		if (!this.sanityCheck()) return;
 
-		// TODO: these are all proof of concept implementations for the moment
-		// until worker communication is implemented
-		// #region proof of concept
-		await this.redisSubscriber.subscribeToEventLog();
-		await this.redisSubscriber.subscribeToWorkerResponseChannel();
-		await this.redisSubscriber.subscribeToCommandChannel();
+		const payload = data as RedisServiceBaseCommand['payload'];
 
-		this.redisSubscriber.addMessageHandler(
-			'OrchestrationMessageReceiver',
-			async (channel: string, messageString: string) => {
-				// TODO: this is a proof of concept implementation to forward events to the main instance's event bus
-				// Events are arriving through a pub/sub channel and are forwarded to the eventBus
-				// In the future, a stream should probably replace this implementation entirely
-				if (channel === EVENT_BUS_REDIS_CHANNEL) {
-					await this.handleEventBusMessage(messageString);
-				} else if (channel === WORKER_RESPONSE_REDIS_CHANNEL) {
-					await this.handleWorkerResponseMessage(messageString);
-				} else if (channel === COMMAND_REDIS_CHANNEL) {
-					await this.handleCommandMessage(messageString);
-				}
-			},
-		);
+		this.logger.debug(`[Instance ID ${this.instanceId}] Publishing command "${command}"`, payload);
+
+		await this.redisPublisher.publishToCommandChannel({ command, payload });
 	}
 
-	async handleWorkerResponseMessage(messageString: string) {
-		const workerResponse = jsonParse<RedisServiceWorkerResponseObject>(messageString);
-		if (workerResponse) {
-			// TODO: Handle worker response
-			LoggerProxy.debug('Received worker response', workerResponse);
-		}
-		return workerResponse;
-	}
-
-	async handleEventBusMessage(messageString: string) {
-		const eventData = jsonParse<AbstractEventMessageOptions>(messageString);
-		if (eventData) {
-			const eventMessage = getEventMessageObjectByType(eventData);
-			if (eventMessage) {
-				await eventBus.send(eventMessage);
-			}
-		}
-		return eventData;
-	}
-
-	async handleCommandMessage(messageString: string) {
-		if (!messageString) return;
-		let message: RedisServiceCommandObject;
-		try {
-			message = jsonParse<RedisServiceCommandObject>(messageString);
-		} catch {
-			LoggerProxy.debug(
-				`Received invalid message via channel ${COMMAND_REDIS_CHANNEL}: "${messageString}"`,
-			);
-			return;
-		}
-		if (message) {
-			if (
-				message.senderId === this.uniqueInstanceId ||
-				(message.targets && !message.targets.includes(this.uniqueInstanceId))
-			) {
-				LoggerProxy.debug(
-					`Skipping command message ${message.command} because it's not for this instance.`,
-				);
-				return message;
-			}
-			switch (message.command) {
-				case 'restartEventBus':
-					await eventBus.restart();
-					break;
-			}
-			return message;
-		}
-		return;
-	}
+	// ----------------------------------
+	//         workers status
+	// ----------------------------------
 
 	async getWorkerStatus(id?: string) {
-		if (!this.initialized) {
-			throw new Error('OrchestrationService not initialized');
-		}
+		if (!this.sanityCheck()) return;
+
+		const command = 'getStatus';
+
+		this.logger.debug(`Sending "${command}" to command channel`);
+
 		await this.redisPublisher.publishToCommandChannel({
-			senderId: this.uniqueInstanceId,
-			command: 'getStatus',
+			command,
 			targets: id ? [id] : undefined,
 		});
 	}
 
 	async getWorkerIds() {
-		if (!this.initialized) {
-			throw new Error('OrchestrationService not initialized');
-		}
-		await this.redisPublisher.publishToCommandChannel({
-			senderId: this.uniqueInstanceId,
-			command: 'getId',
-		});
-	}
+		if (!this.sanityCheck()) return;
 
-	// TODO: not implemented yet on worker side
-	async stopWorker(id?: string) {
-		if (!this.initialized) {
-			throw new Error('OrchestrationService not initialized');
-		}
-		await this.redisPublisher.publishToCommandChannel({
-			senderId: this.uniqueInstanceId,
-			command: 'stopWorker',
-			targets: id ? [id] : undefined,
-		});
-	}
+		const command = 'getId';
 
-	async restartEventBus(id?: string) {
-		if (!this.initialized) {
-			throw new Error('OrchestrationService not initialized');
-		}
-		await this.redisPublisher.publishToCommandChannel({
-			senderId: this.uniqueInstanceId,
-			command: 'restartEventBus',
-			targets: id ? [id] : undefined,
-		});
+		this.logger.debug(`Sending "${command}" to command channel`);
+
+		await this.redisPublisher.publishToCommandChannel({ command });
 	}
 }

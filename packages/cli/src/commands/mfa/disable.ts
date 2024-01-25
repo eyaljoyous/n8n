@@ -1,5 +1,6 @@
-import { flags } from '@oclif/command';
-import * as Db from '@/Db';
+import Container from 'typedi';
+import { Flags } from '@oclif/core';
+import { UserRepository } from '@db/repositories/user.repository';
 import { BaseCommand } from '../BaseCommand';
 
 export class DisableMFACommand extends BaseCommand {
@@ -8,8 +9,8 @@ export class DisableMFACommand extends BaseCommand {
 	static examples = ['$ n8n mfa:disable --email=johndoe@example.com'];
 
 	static flags = {
-		help: flags.help({ char: 'h' }),
-		email: flags.string({
+		help: Flags.help({ char: 'h' }),
+		email: Flags.string({
 			description: 'The email of the user to disable the MFA authentication',
 		}),
 	};
@@ -19,15 +20,14 @@ export class DisableMFACommand extends BaseCommand {
 	}
 
 	async run(): Promise<void> {
-		// eslint-disable-next-line @typescript-eslint/no-shadow
-		const { flags } = this.parse(DisableMFACommand);
+		const { flags } = await this.parse(DisableMFACommand);
 
 		if (!flags.email) {
 			this.logger.info('An email with --email must be provided');
 			return;
 		}
 
-		const updateOperationResult = await Db.collections.User.update(
+		const updateOperationResult = await Container.get(UserRepository).update(
 			{ email: flags.email },
 			{ mfaSecret: null, mfaRecoveryCodes: [], mfaEnabled: false },
 		);

@@ -9,6 +9,7 @@ import type {
 	ILoadOptionsFunctions,
 	INodeExecutionData,
 	INodeProperties,
+	IPairedItemData,
 	IPollFunctions,
 	JsonObject,
 } from 'n8n-workflow';
@@ -16,11 +17,10 @@ import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 import { camelCase, capitalCase, snakeCase } from 'change-case';
 
-import { filters } from './Filters';
-
 import moment from 'moment-timezone';
 
 import { validate as uuidValidate } from 'uuid';
+import { filters } from './Filters';
 
 function uuidValidateWithoutDashes(this: IExecuteFunctions, value: string) {
 	if (uuidValidate(value)) return true;
@@ -40,6 +40,7 @@ export type SortData = { key: string; type: string; direction: string; timestamp
 const apiVersion: { [key: number]: string } = {
 	1: '2021-05-13',
 	2: '2021-08-16',
+	2.1: '2021-08-16',
 };
 
 export async function notionApiRequest(
@@ -81,7 +82,6 @@ export async function notionApiRequestAllItems(
 	propertyName: string,
 	method: string,
 	endpoint: string,
-
 	body: any = {},
 	query: IDataObject = {},
 ): Promise<any> {
@@ -107,6 +107,48 @@ export async function notionApiRequestAllItems(
 	} while (responseData.has_more !== false);
 
 	return returnData;
+}
+
+export async function notionApiRequestGetBlockChildrens(
+	this: IExecuteFunctions | ILoadOptionsFunctions | IPollFunctions,
+	blocks: IDataObject[],
+	responseData: IDataObject[] = [],
+	limit?: number,
+) {
+	if (blocks.length === 0) return responseData;
+
+	for (const block of blocks) {
+		responseData.push(block);
+
+		if (block.type === 'child_page') continue;
+
+		if (block.has_children) {
+			let childrens = await notionApiRequestAllItems.call(
+				this,
+				'results',
+				'GET',
+				`/blocks/${block.id}/children`,
+			);
+
+			childrens = (childrens || []).map((entry: IDataObject) => ({
+				object: entry.object,
+				parent_id: block.id,
+				...entry,
+			}));
+
+			await notionApiRequestGetBlockChildrens.call(this, childrens, responseData);
+		}
+
+		if (limit && responseData.length === limit) {
+			return responseData;
+		}
+
+		if (limit && responseData.length > limit) {
+			return responseData.slice(0, limit);
+		}
+	}
+
+	return responseData;
 }
 
 export function getBlockTypes() {
@@ -279,6 +321,10 @@ function getDateFormat(includeTime: boolean) {
 	return '';
 }
 
+function isEmpty(value: unknown): boolean {
+	return value === undefined || value === null || value === '';
+}
+
 function getPropertyKeyValue(
 	this: IExecuteFunctions,
 	value: any,
@@ -327,7 +373,16 @@ function getPropertyKeyValue(
 			};
 			break;
 		case 'multi_select':
+			if (isEmpty(value.multiSelectValue)) {
+				result = {
+					type: 'multi_select',
+					multi_select: [],
+				};
+				break;
+			}
+
 			const multiSelectValue = value.multiSelectValue;
+
 			result = {
 				type: 'multi_select',
 				multi_select: (Array.isArray(multiSelectValue)
@@ -362,6 +417,14 @@ function getPropertyKeyValue(
 			};
 			break;
 		case 'select':
+			if (isEmpty(value.selectValue)) {
+				result = {
+					type: 'select',
+					select: null,
+				};
+				break;
+			}
+
 			result = {
 				type: 'select',
 				select: version === 1 ? { id: value.selectValue } : { name: value.selectValue },
@@ -496,12 +559,16 @@ export function mapFilters(filtersList: IDataObject[], timezone: string) {
 		}
 
 		if (value.type === 'formula') {
-			const vpropertyName = value[`${camelCase(value.returnType as string)}Value`];
+			if (['is_empty', 'is_not_empty'].includes(value.condition as string)) {
+				key = value.returnType;
+			} else {
+				const vpropertyName = value[`${camelCase(value.returnType as string)}Value`];
 
-			return Object.assign(obj, {
-				['property']: getNameAndType(value.key as string).name,
-				[key]: { [value.returnType]: { [`${value.condition}`]: vpropertyName } },
-			});
+				return Object.assign(obj, {
+					['property']: getNameAndType(value.key as string).name,
+					[key]: { [value.returnType]: { [`${value.condition}`]: vpropertyName } },
+				});
+			}
 		}
 
 		return Object.assign(obj, {
@@ -798,12 +865,15 @@ export type FileRecord = {
 	};
 };
 // prettier-ignore
-export async function downloadFiles(this: IExecuteFunctions | IPollFunctions, records: FileRecord[]): Promise<INodeExecutionData[]> {
+export async function downloadFiles(this: IExecuteFunctions | IPollFunctions, records: FileRecord[], pairedItem?: IPairedItemData[]): Promise<INodeExecutionData[]> {
 
 	const elements: INodeExecutionData[] = [];
 	for (const record of records) {
 		const element: INodeExecutionData = { json: {}, binary: {} };
 		element.json = record as unknown as IDataObject;
+		if (pairedItem) {
+			element.pairedItems = pairedItem;
+		}
 		for (const key of Object.keys(record.properties)) {
 			if (record.properties[key].type === 'files') {
 				if (record.properties[key].files.length) {
@@ -830,7 +900,7 @@ export async function downloadFiles(this: IExecuteFunctions | IPollFunctions, re
 	return elements;
 }
 
-export function extractPageId(page: string) {
+export function extractPageId(page = '') {
 	if (page.includes('p=')) {
 		return page.split('p=')[1];
 	} else if (page.includes('-') && page.includes('https')) {
@@ -874,9 +944,11 @@ export function getSearchFilters(resource: string) {
 			],
 			displayOptions: {
 				show: {
-					'@version': [2],
 					resource: [resource],
 					operation: ['getAll'],
+				},
+				hide: {
+					'@version': [1],
 				},
 			},
 			default: 'none',
@@ -897,10 +969,12 @@ export function getSearchFilters(resource: string) {
 			],
 			displayOptions: {
 				show: {
-					'@version': [2],
 					resource: [resource],
 					operation: ['getAll'],
 					filterType: ['manual'],
+				},
+				hide: {
+					'@version': [1],
 				},
 			},
 			default: 'anyFilter',
@@ -914,10 +988,12 @@ export function getSearchFilters(resource: string) {
 			},
 			displayOptions: {
 				show: {
-					'@version': [2],
 					resource: [resource],
 					operation: ['getAll'],
 					filterType: ['manual'],
+				},
+				hide: {
+					'@version': [1],
 				},
 			},
 			default: {},
@@ -937,10 +1013,12 @@ export function getSearchFilters(resource: string) {
 			type: 'notice',
 			displayOptions: {
 				show: {
-					'@version': [2],
 					resource: [resource],
 					operation: ['getAll'],
 					filterType: ['json'],
+				},
+				hide: {
+					'@version': [1],
 				},
 			},
 			default: '',
@@ -951,10 +1029,12 @@ export function getSearchFilters(resource: string) {
 			type: 'string',
 			displayOptions: {
 				show: {
-					'@version': [2],
 					resource: [resource],
 					operation: ['getAll'],
 					filterType: ['json'],
+				},
+				hide: {
+					'@version': [1],
 				},
 			},
 			default: '',
@@ -1005,4 +1085,46 @@ export function extractDatabaseMentionRLC(blockValues: IDataObject[]) {
 			});
 		}
 	});
+}
+
+export function simplifyBlocksOutput(blocks: IDataObject[], rootId: string) {
+	for (const block of blocks) {
+		const type = block.type as string;
+		block.root_id = rootId;
+
+		['created_time', 'last_edited_time', 'created_by'].forEach((key) => {
+			delete block[key];
+		});
+
+		try {
+			if (['code'].includes(type)) {
+				const text = (block[type] as IDataObject).text as IDataObject[];
+				if (text && Array.isArray(text)) {
+					const content = text.map((entry) => entry.plain_text || '').join('');
+					block.content = content;
+					delete block[type];
+				}
+				continue;
+			}
+
+			if (['child_page', 'child_database'].includes(type)) {
+				const content = (block[type] as IDataObject).title as string;
+				block.content = content;
+				delete block[type];
+				continue;
+			}
+
+			const text = (block[type] as IDataObject)?.text as IDataObject[];
+
+			if (text && Array.isArray(text)) {
+				const content = text.map((entry) => entry.plain_text || '').join('');
+				block.content = content;
+				delete block[type];
+			}
+		} catch (e) {
+			continue;
+		}
+	}
+
+	return blocks;
 }
