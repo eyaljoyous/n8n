@@ -265,7 +265,7 @@ export class License {
 	}
 
 	isWorkerViewLicensed() {
-		return this.isFeatureEnabled(LICENSE_FEATURES.WORKER_VIEW);
+		return true;
 	}
 
 	getCurrentEntitlements() {
