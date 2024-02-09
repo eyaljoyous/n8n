@@ -229,7 +229,7 @@ export class License {
 	}
 
 	isAdvancedPermissionsLicensed() {
-		return this.isFeatureEnabled(LICENSE_FEATURES.ADVANCED_PERMISSIONS);
+		return true;
 	}
 
 	isDebugInEditorLicensed() {
