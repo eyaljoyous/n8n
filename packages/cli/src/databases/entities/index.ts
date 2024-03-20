@@ -18,7 +18,6 @@ import { WorkflowTagMapping } from './WorkflowTagMapping';
 import { WorkflowStatistics } from './WorkflowStatistics';
 import { ExecutionMetadata } from './ExecutionMetadata';
 import { ExecutionData } from './ExecutionData';
-import { WorkflowEntityWithVersion } from './WorkflowEntityWithVersion';
 import { WorkflowHistory } from './WorkflowHistory';
 
 export const entities = {
@@ -41,6 +40,5 @@ export const entities = {
 	WorkflowStatistics,
 	ExecutionMetadata,
 	ExecutionData,
-	WorkflowEntityWithVersion,
 	WorkflowHistory,
 };

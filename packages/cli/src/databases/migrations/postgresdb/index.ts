@@ -38,7 +38,6 @@ import { CreateVariables1677501636754 } from './1677501636754-CreateVariables';
 import { AddUserActivatedProperty1681134145996 } from './1681134145996-AddUserActivatedProperty';
 import { MigrateIntegerKeysToString1690000000000 } from './1690000000000-MigrateIntegerKeysToString';
 import { SeparateExecutionData1690000000020 } from './1690000000020-SeparateExecutionData';
-import { AddWorkflowEntityWithVersion1690000000040 } from './1690000000040-AddWorkflowEntityWithVersion';
 import { RemoveSkipOwnerSetup1681134145997 } from './1681134145997-RemoveSkipOwnerSetup';
 import { RemoveResetPasswordColumns1690000000030 } from '../common/1690000000030-RemoveResetPasswordColumns';
 import { AddMissingPrimaryKeyOnExecutionData1690787606731 } from './1690787606731-AddMissingPrimaryKeyOnExecutionData';
@@ -48,7 +47,6 @@ import { CreateWorkflowHistoryTable1692967111175 } from '../common/1692967111175
 import { DisallowOrphanExecutions1693554410387 } from '../common/1693554410387-DisallowOrphanExecutions';
 import { ExecutionSoftDelete1693491613982 } from '../common/1693491613982-ExecutionSoftDelete';
 import { AddWorkflowMetadata1695128658538 } from '../common/1695128658538-AddWorkflowMetadata';
-import { AddWorkflowEntityWithVersionMetadata1690000000040 } from '../common/1690000000040-AddWorkflowEntityWithVersionMetadata';
 import { MigrateToTimestampTz1694091729095 } from './1694091729095-MigrateToTimestampTz';
 import { ModifyWorkflowHistoryNodesAndConnections1695829275184 } from '../common/1695829275184-ModifyWorkflowHistoryNodesAndConnections';
 import { AddGlobalAdminRole1700571993961 } from '../common/1700571993961-AddGlobalAdminRole';
@@ -92,7 +90,6 @@ export const postgresMigrations: Migration[] = [
 	CreateExecutionMetadataTable1679416281778,
 	CreateVariables1677501636754,
 	AddUserActivatedProperty1681134145996,
-	AddWorkflowEntityWithVersion1690000000040,
 	MigrateIntegerKeysToString1690000000000,
 	SeparateExecutionData1690000000020,
 	RemoveSkipOwnerSetup1681134145997,
@@ -104,7 +101,6 @@ export const postgresMigrations: Migration[] = [
 	DisallowOrphanExecutions1693554410387,
 	ExecutionSoftDelete1693491613982,
 	AddWorkflowMetadata1695128658538,
-	AddWorkflowEntityWithVersionMetadata1690000000040,
 	MigrateToTimestampTz1694091729095,
 	ModifyWorkflowHistoryNodesAndConnections1695829275184,
 	AddGlobalAdminRole1700571993961,

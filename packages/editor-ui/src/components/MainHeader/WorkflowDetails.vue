@@ -152,14 +152,12 @@ import {
 	WORKFLOW_MENU_ACTIONS,
 	WORKFLOW_SETTINGS_MODAL_KEY,
 	WORKFLOW_SHARE_MODAL_KEY,
-	WORKFLOW_WITH_VERSION_MODAL_KEY,
 } from '@/constants';
 
 import ShortenName from '@/components/ShortenName.vue';
 import TagsContainer from '@/components/TagsContainer.vue';
 import PushConnectionTracker from '@/components/PushConnectionTracker.vue';
 import WorkflowActivator from '@/components/WorkflowActivator.vue';
-import { workflowHelpers } from '@/mixins/workflowHelpers';
 import SaveButton from '@/components/SaveButton.vue';
 import TagsDropdown from '@/components/TagsDropdown.vue';
 import InlineTextEdit from '@/components/InlineTextEdit.vue';
@@ -186,6 +184,8 @@ import { createEventBus } from 'n8n-design-system/utils';
 import { nodeViewEventBus } from '@/event-bus';
 import { hasPermission } from '@/rbac/permissions';
 import { useCanvasStore } from '@/stores/canvas.store';
+import { useRouter } from 'vue-router';
+import { useWorkflowHelpers } from '@/composables/useWorkflowHelpers';
 
 const hasChanged = (prev: string[], curr: string[]) => {
 	if (prev.length !== curr.length) {
@@ -209,7 +209,6 @@ export default defineComponent({
 		BreakpointsObserver,
 		CollaborationPane,
 	},
-	mixins: [workflowHelpers],
 	props: {
 		readOnly: {
 			type: Boolean,
@@ -217,7 +216,11 @@ export default defineComponent({
 		},
 	},
 	setup() {
+		const router = useRouter();
+		const workflowHelpers = useWorkflowHelpers({ router });
+
 		return {
+			workflowHelpers,
 			...useTitleChange(),
 			...useToast(),
 			...useMessage(),
@@ -322,6 +325,11 @@ export default defineComponent({
 						label: this.$locale.baseText('menuActions.importFromUrl'),
 						disabled: !this.onWorkflowPage || this.onExecutionsTab,
 					},
+					{
+						id: WORKFLOW_MENU_ACTIONS.IMPORT_FROM_FILE,
+						label: this.$locale.baseText('menuActions.importFromFile'),
+						disabled: !this.onWorkflowPage || this.onExecutionsTab,
+					},
 				);
 			}
 
@@ -352,15 +360,6 @@ export default defineComponent({
 					divided: true,
 				});
 			}
-
-			if (!this.readOnly) {
-				actions.push({
-					id: WORKFLOW_MENU_ACTIONS.VIEW_WORKFLOW_VERSIONS,
-					label: this.$locale.baseText('menuActions.viewWorkflowVersions'),
-					disabled: !this.onWorkflowPage || this.onExecutionsTab,
-				});
-			}
-
 
 			return actions;
 		},
@@ -395,7 +394,7 @@ export default defineComponent({
 			} else if (this.$route.params.name && this.$route.params.name !== 'new') {
 				currentId = this.$route.params.name;
 			}
-			const saved = await this.saveCurrentWorkflow({
+			const saved = await this.workflowHelpers.saveCurrentWorkflow({
 				id: currentId,
 				name: this.workflowName,
 				tags: this.currentWorkflowTagIds,
@@ -448,7 +447,7 @@ export default defineComponent({
 			}
 			this.tagsSaving = true;
 
-			const saved = await this.saveCurrentWorkflow({ tags });
+			const saved = await this.workflowHelpers.saveCurrentWorkflow({ tags });
 			this.$telemetry.track('User edited workflow tags', {
 				workflow_id: this.currentWorkflowId,
 				new_tag_count: tags.length,
@@ -499,7 +498,7 @@ export default defineComponent({
 				return;
 			}
 
-			const saved = await this.saveCurrentWorkflow({ name });
+			const saved = await this.workflowHelpers.saveCurrentWorkflow({ name });
 			if (saved) {
 				this.isNameEditEnabled = false;
 			}
@@ -544,7 +543,7 @@ export default defineComponent({
 					break;
 				}
 				case WORKFLOW_MENU_ACTIONS.DOWNLOAD: {
-					const workflowData = await this.getWorkflowDataToSave();
+					const workflowData = await this.workflowHelpers.getWorkflowDataToSave();
 					const { tags, ...data } = workflowData;
 					const exportData: IWorkflowToShare = {
 						...data,
@@ -663,13 +662,6 @@ export default defineComponent({
 					await this.$router.push({ name: VIEWS.NEW_WORKFLOW });
 					break;
 				}
-
-				case WORKFLOW_MENU_ACTIONS.VIEW_WORKFLOW_VERSIONS: {
-					// const workflowData = await this.getWorkflowWithVersion(this.currentWorkflowId);
-					this.uiStore.openModal(WORKFLOW_WITH_VERSION_MODAL_KEY);
-					break;
-				}
-
 				default:
 					break;
 			}
