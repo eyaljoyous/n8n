@@ -446,6 +446,10 @@ export type BinaryDataRequest = AuthenticatedRequest<
 //           /variables
 // ----------------------------------
 //
+export declare namespace WorkflowWithVersionRequest {
+	type GetAll = AuthenticatedRequest;
+	type Get = AuthenticatedRequest<{ id: string }, {}, {}, { versionId?: string }>;
+}
 export declare namespace VariablesRequest {
 	type CreateUpdatePayload = Omit<Variables, 'id'> & { id?: unknown };
 
