@@ -76,12 +76,6 @@ export const getOptionOverrides = (dbType: 'postgresdb' | 'mysqldb') => {
     console.log('not using postgresURL!!!!!!')
 		connectionDetails = {
 
-      // database: dbConfig.database,
-			// host: dbConfig.host,
-			// port: dbConfig.port,
-			// username: dbConfig.user,
-			// password: dbConfig.password,
-
 			database: config.getEnv(`database.${dbType}.database`),
 			host: config.getEnv(`database.${dbType}.host`),
 			port: config.getEnv(`database.${dbType}.port`),
@@ -175,18 +169,10 @@ export function getConnectionOptions(): DataSourceOptions {
 function isPostgresRunningLocally(): Boolean {
 	let host: String | undefined;
 	const postgresConfig = parsePostgresUrl();
-
-  const globalConfig = Container.get(GlobalConfig);
-  const dbConfig = globalConfig.database['postgresdb'];
-
-  console.log('is post gres running locally...!!!!!!!')
-  console.log('postgres config', postgresConfig)
-  console.log('db config', dbConfig.host)
-
 	if (postgresConfig != null) {
 		host = postgresConfig.host;
 	} else {
-    host = dbConfig.host;
+		host = config.getEnv('database.postgresdb.host');
 	}
 	return host === ('localhost' || '127.0.0.1');
 }
