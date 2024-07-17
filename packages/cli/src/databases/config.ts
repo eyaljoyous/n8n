@@ -119,7 +119,8 @@ const getPostgresConnectionOptions = (): PostgresConnectionOptions => {
 		ssl: { ca: sslCa, cert: sslCert, key: sslKey, rejectUnauthorized: sslRejectUnauthorized },
 	} = postgresConfig;
 
-	let ssl: TlsOptions | boolean = postgresConfig.ssl.enabled;
+  let ssl: TlsOptions | boolean = config.getEnv('database.postgresdb.ssl.enabled');
+
   if (!isPostgresRunningLocally()) {
     if (sslCa !== '' || sslCert !== '' || sslKey !== '' || !sslRejectUnauthorized) {
       ssl = {
@@ -135,8 +136,8 @@ const getPostgresConnectionOptions = (): PostgresConnectionOptions => {
 		type: 'postgres',
 		...getCommonOptions(),
 		...getOptionOverrides('postgresdb'),
-		schema: postgresConfig.schema,
-		poolSize: postgresConfig.poolSize,
+		schema: config.getEnv('database.postgresdb.schema'),
+		poolSize: config.getEnv('database.postgresdb.poolSize'),
 		migrations: postgresMigrations,
 		ssl,
 	};
@@ -151,8 +152,9 @@ const getMysqlConnectionOptions = (dbType: 'mariadb' | 'mysqldb'): MysqlConnecti
 });
 
 export function getConnectionOptions(): DataSourceOptions {
-	const globalConfig = Container.get(GlobalConfig);
-	const { type: dbType } = globalConfig.database;
+	// const globalConfig = Container.get(GlobalConfig);
+  const dbType = config.getEnv('database.type');
+	// const { type: dbType } = globalConfig.database;
 	switch (dbType) {
 		case 'sqlite':
 			return getSqliteConnectionOptions();
