@@ -114,10 +114,16 @@ const getSqliteConnectionOptions = (): SqliteConnectionOptions | SqlitePooledCon
 };
 
 const getPostgresConnectionOptions = (): PostgresConnectionOptions => {
-	const postgresConfig = Container.get(GlobalConfig).database.postgresdb;
-	const {
-		ssl: { ca: sslCa, cert: sslCert, key: sslKey, rejectUnauthorized: sslRejectUnauthorized },
-	} = postgresConfig;
+	// const postgresConfig = Container.get(GlobalConfig).database.postgresdb;
+	// const {
+	// 	ssl: { ca: sslCa, cert: sslCert, key: sslKey, rejectUnauthorized: sslRejectUnauthorized },
+	// } = postgresConfig;
+
+  const sslCa = config.getEnv('database.postgresdb.ssl.ca');
+	const sslCert = config.getEnv('database.postgresdb.ssl.cert');
+	const sslKey = config.getEnv('database.postgresdb.ssl.key');
+	const sslRejectUnauthorized = config.getEnv('database.postgresdb.ssl.rejectUnauthorized');
+
 
   let ssl: TlsOptions | boolean = config.getEnv('database.postgresdb.ssl.enabled');
 
@@ -131,6 +137,18 @@ const getPostgresConnectionOptions = (): PostgresConnectionOptions => {
       };
     }
   }
+
+  console.log('FINAL DB CONFIG!!!!!!!!!!!!!!!!!!')
+
+  console.log({
+		type: 'postgres',
+		...getCommonOptions(),
+		...getOptionOverrides('postgresdb'),
+		schema: config.getEnv('database.postgresdb.schema'),
+		poolSize: config.getEnv('database.postgresdb.poolSize'),
+		migrations: postgresMigrations,
+		ssl,
+	})
 
 	return {
 		type: 'postgres',
