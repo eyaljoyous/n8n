@@ -59,6 +59,10 @@ export const getOptionOverrides = (dbType: 'postgresdb' | 'mysqldb') => {
   const globalConfig = Container.get(GlobalConfig);
   const dbConfig = globalConfig.database[dbType];
 
+  console.log('here!!!!!!!!!!!!!!!!!!!!!!!!!!')
+  console.log('dbConfig', dbConfig)
+
+
 	let connectionDetails;
 	if (dbType == 'postgresdb') {
 		connectionDetails = parsePostgresUrl();
