@@ -10,6 +10,7 @@ import { InstanceSettings } from 'n8n-core';
 import { ApplicationError } from 'n8n-workflow';
 import { GlobalConfig } from '@n8n/config';
 
+import config from '@/config';
 import { entities } from './entities';
 import { subscribers } from './subscribers';
 import { mysqlMigrations } from './migrations/mysqldb';
@@ -65,22 +66,27 @@ export const getOptionOverrides = (dbType: 'postgresdb' | 'mysqldb') => {
 
 	let connectionDetails;
 	if (dbType == 'postgresdb') {
+    console.log('HERE AGAIN!!!!!!!!!')
+    console.log('using parsePostGresURL()')
+    console.log(parsePostgresUrl());
+
 		connectionDetails = parsePostgresUrl();
 	}
 	if (!connectionDetails) {
+    console.log('not using postgresURL!!!!!!')
 		connectionDetails = {
 
-      database: dbConfig.database,
-			host: dbConfig.host,
-			port: dbConfig.port,
-			username: dbConfig.user,
-			password: dbConfig.password,
+      // database: dbConfig.database,
+			// host: dbConfig.host,
+			// port: dbConfig.port,
+			// username: dbConfig.user,
+			// password: dbConfig.password,
 
-			// database: config.getEnv(`database.${dbType}.database`),
-			// host: config.getEnv(`database.${dbType}.host`),
-			// port: config.getEnv(`database.${dbType}.port`),
-			// username: config.getEnv(`database.${dbType}.user`),
-			// password: config.getEnv(`database.${dbType}.password`),
+			database: config.getEnv(`database.${dbType}.database`),
+			host: config.getEnv(`database.${dbType}.host`),
+			port: config.getEnv(`database.${dbType}.port`),
+			username: config.getEnv(`database.${dbType}.user`),
+			password: config.getEnv(`database.${dbType}.password`),
 
 		}
 	}
@@ -172,6 +178,10 @@ function isPostgresRunningLocally(): Boolean {
 
   const globalConfig = Container.get(GlobalConfig);
   const dbConfig = globalConfig.database['postgresdb'];
+
+  console.log('is post gres running locally...!!!!!!!')
+  console.log('postgres config', postgresConfig)
+  console.log('db config', dbConfig.host)
 
 	if (postgresConfig != null) {
 		host = postgresConfig.host;
