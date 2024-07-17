@@ -18,20 +18,46 @@ import { postgresMigrations } from './migrations/postgresdb';
 import { sqliteMigrations } from './migrations/sqlite';
 import { parsePostgresUrl } from '@/ParserHelper';
 
-const getCommonOptions = () => {
-	const { tablePrefix: entityPrefix, logging: loggingConfig } =
-		Container.get(GlobalConfig).database;
+// const getCommonOptions = () => {
+// 	const { tablePrefix: entityPrefix, logging: loggingConfig } =
+// 		Container.get(GlobalConfig).database;
 
-	let loggingOption: LoggerOptions = loggingConfig.enabled;
+// 	let loggingOption: LoggerOptions = loggingConfig.enabled;
+// 	if (loggingOption) {
+// 		const optionsString = loggingConfig.options.replace(/\s+/g, '');
+// 		if (optionsString === 'all') {
+// 			loggingOption = optionsString;
+// 		} else {
+// 			loggingOption = optionsString.split(',') as LoggerOptions;
+// 		}
+// 	}
+
+// 	return {
+// 		entityPrefix,
+// 		entities: Object.values(entities),
+// 		subscribers: Object.values(subscribers),
+// 		migrationsTableName: `${entityPrefix}migrations`,
+// 		migrationsRun: false,
+// 		synchronize: false,
+// 		maxQueryExecutionTime: loggingConfig.maxQueryExecutionTime,
+// 		logging: loggingOption,
+// 	};
+// };
+
+const getCommonOptions = () => {
+	const entityPrefix = config.getEnv('database.tablePrefix');
+	const maxQueryExecutionTime = config.getEnv('database.logging.maxQueryExecutionTime');
+
+	let loggingOption: LoggerOptions = config.getEnv('database.logging.enabled');
 	if (loggingOption) {
-		const optionsString = loggingConfig.options.replace(/\s+/g, '');
+		const optionsString = config.getEnv('database.logging.options').replace(/\s+/g, '');
+
 		if (optionsString === 'all') {
 			loggingOption = optionsString;
 		} else {
 			loggingOption = optionsString.split(',') as LoggerOptions;
 		}
 	}
-
 	return {
 		entityPrefix,
 		entities: Object.values(entities),
@@ -39,7 +65,7 @@ const getCommonOptions = () => {
 		migrationsTableName: `${entityPrefix}migrations`,
 		migrationsRun: false,
 		synchronize: false,
-		maxQueryExecutionTime: loggingConfig.maxQueryExecutionTime,
+		maxQueryExecutionTime,
 		logging: loggingOption,
 	};
 };
