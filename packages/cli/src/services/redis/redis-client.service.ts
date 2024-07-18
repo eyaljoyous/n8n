@@ -121,12 +121,14 @@ export class RedisClientService {
 			...extraOptions,
 		};
 
-    // Maybe try host !== 'localhost' || host !== '127.0.0.
-		if (tls && host !== 'localhost') {
+		if (host !== 'localhost' && host !== '127.0.0.1' ) {
       options.tls = {
         rejectUnauthorized: false,
       }; // enable TLS with default Node.js settings
     }
+
+    console.log('HERE ARE THE REDIS OPTIONS!!!!!!!!!')
+    console.log(options);
 
 		return options;
 	}
