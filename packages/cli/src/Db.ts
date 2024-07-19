@@ -30,13 +30,14 @@ if (!inTest) {
 	const pingDBFn = async () => {
 		if (connection?.isInitialized) {
 			try {
-				await connection.query('SELECT 1');
+				// await connection.query('SELECT 1');
+        await connection.query('SELECT * from pg_tables LIMIT 1');
 				connectionState.connected = true;
 				return;
 			} catch (error) {
 				ErrorReporter.error(error);
 			} finally {
-				pingTimer = setTimeout(pingDBFn, 10000);
+				pingTimer = setTimeout(pingDBFn, 2000);
 			}
 		}
 		connectionState.connected = false;
