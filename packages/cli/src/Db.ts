@@ -9,6 +9,7 @@ import { inTest } from '@/constants';
 import { wrapMigration } from '@db/utils/migrationHelpers';
 import type { Migration } from '@db/types';
 import { getConnectionOptions } from '@db/config';
+import config from '@/config';
 
 let connection: Connection;
 
@@ -45,12 +46,26 @@ if (!inTest) {
 	pingTimer = setTimeout(pingDBFn, 2000);
 }
 
+export async function setSchema(conn: Connection) {
+	const schema = config.getEnv('database.postgresdb.schema');
+	console.log('setSchema', schema);
+	const searchPath = ['public'];
+	if (schema !== 'public') {
+		await conn.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+		searchPath.unshift(schema);
+		console.log('searchPath', searchPath);
+	}
+	await conn.query(`SET search_path TO ${searchPath.join(',')};`);
+}
+
 export async function transaction<T>(fn: (entityManager: EntityManager) => Promise<T>): Promise<T> {
 	return await connection.transaction(fn);
 }
 
 export async function init(): Promise<void> {
 	if (connectionState.connected) return;
+	const dbType = config.getEnv('database.type');
+	console.log('init dbType', dbType);
 
 	const connectionOptions = getConnectionOptions();
 	console.log('init connectionOptions', connectionOptions);
@@ -58,7 +73,10 @@ export async function init(): Promise<void> {
 	console.log('init connection', connection);
 	Container.set(Connection, connection);
 	await connection.initialize();
-	await connection.query(`SET search_path TO n8n;`);
+
+	if (dbType === 'postgresdb') {
+		await setSchema(connection);
+	}
 
 	connectionState.connected = true;
 }
