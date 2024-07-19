@@ -36,7 +36,7 @@ if (!inTest) {
 			} catch (error) {
 				ErrorReporter.error(error);
 			} finally {
-				pingTimer = setTimeout(pingDBFn, 2000);
+				pingTimer = setTimeout(pingDBFn, 10000);
 			}
 		}
 		connectionState.connected = false;
