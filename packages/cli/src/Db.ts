@@ -58,6 +58,7 @@ export async function init(): Promise<void> {
 	console.log('init connection', connection);
 	Container.set(Connection, connection);
 	await connection.initialize();
+	await connection.query(`SET search_path TO n8n;`);
 
 	connectionState.connected = true;
 }
