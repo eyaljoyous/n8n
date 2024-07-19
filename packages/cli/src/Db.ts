@@ -31,7 +31,7 @@ if (!inTest) {
 		if (connection?.isInitialized) {
 			try {
 				// await connection.query('SELECT 1');
-        await connection.query('SELECT * from pg_tables LIMIT 1');
+				await connection.query('SELECT * from pg_tables LIMIT 1');
 				connectionState.connected = true;
 				return;
 			} catch (error) {
@@ -53,7 +53,9 @@ export async function init(): Promise<void> {
 	if (connectionState.connected) return;
 
 	const connectionOptions = getConnectionOptions();
+	console.log('init connectionOptions', connectionOptions);
 	connection = new Connection(connectionOptions);
+	console.log('init connection', connection);
 	Container.set(Connection, connection);
 	await connection.initialize();
 
