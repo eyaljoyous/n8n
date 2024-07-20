@@ -38,23 +38,24 @@ if (!inTest) {
 			} catch (error) {
 				ErrorReporter.error(error);
 			} finally {
-
-        if (connectionState.connected) {
-          // 30 minutes
-          pingTimer = setTimeout(pingDBFn, 30 * 60 * 1000);
-        } else {
-          pingTimer = setTimeout(pingDBFn, 2000);
-        }
+				if (connectionState.connected) {
+					// 30 minutes
+					//pingTimer = setTimeout(pingDBFn, 30 * 60 * 1000);
+					pingTimer = setTimeout(pingDBFn, 2000);
+				} else {
+					pingTimer = setTimeout(pingDBFn, 2000);
+				}
 			}
 		}
 		connectionState.connected = false;
 	};
 
-  if (connectionState.connected) {
-    pingTimer = setTimeout(pingDBFn, 30 * 60 * 1000);
-  } else {
-    pingTimer = setTimeout(pingDBFn, 2000);
-  }
+	if (connectionState.connected) {
+		pingTimer = setTimeout(pingDBFn, 2000);
+		//pingTimer = setTimeout(pingDBFn, 30 * 60 * 1000);
+	} else {
+		pingTimer = setTimeout(pingDBFn, 2000);
+	}
 }
 
 export async function setSchema(conn: Connection) {
