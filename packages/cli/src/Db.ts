@@ -31,19 +31,30 @@ if (!inTest) {
 	const pingDBFn = async () => {
 		if (connection?.isInitialized) {
 			try {
-				// await connection.query('SELECT 1');
-				await connection.query('SELECT * from pg_tables LIMIT 1');
+				await connection.query('SELECT 1');
+				// await connection.query('SELECT * from pg_tables LIMIT 1');
 				connectionState.connected = true;
 				return;
 			} catch (error) {
 				ErrorReporter.error(error);
 			} finally {
-				pingTimer = setTimeout(pingDBFn, 2000);
+
+        if (connectionState.connected) {
+          // 30 minutes
+          pingTimer = setTimeout(pingDBFn, 30 * 60 * 1000);
+        } else {
+          pingTimer = setTimeout(pingDBFn, 2000);
+        }
 			}
 		}
 		connectionState.connected = false;
 	};
-	pingTimer = setTimeout(pingDBFn, 2000);
+
+  if (connectionState.connected) {
+    pingTimer = setTimeout(pingDBFn, 30 * 60 * 1000);
+  } else {
+    pingTimer = setTimeout(pingDBFn, 2000);
+  }
 }
 
 export async function setSchema(conn: Connection) {
