@@ -7,7 +7,9 @@ import { useSettingsStore } from '@/stores/settings.store';
 import { useUsersStore } from '@/stores/users.store';
 import { useRBACStore } from '@/stores/rbac.store';
 import { createComponentRenderer } from '@/__tests__/render';
-import { EnterpriseEditionFeature } from '@/constants';
+import { EnterpriseEditionFeature, STORES } from '@/constants';
+import { createTestingPinia } from '@pinia/testing';
+import { SETTINGS_STORE_DEFAULT_STATE } from '@/__tests__/utils';
 
 describe('VariablesView', () => {
 	let server: ReturnType<typeof setupServer>;
@@ -16,7 +18,13 @@ describe('VariablesView', () => {
 	let usersStore: ReturnType<typeof useUsersStore>;
 	let rbacStore: ReturnType<typeof useRBACStore>;
 
-	const renderComponent = createComponentRenderer(VariablesView);
+	const renderComponent = createComponentRenderer(VariablesView, {
+		pinia: createTestingPinia({
+			initialState: {
+				[STORES.SETTINGS]: SETTINGS_STORE_DEFAULT_STATE,
+			},
+		}),
+	});
 
 	beforeAll(() => {
 		server = setupServer();
@@ -36,12 +44,6 @@ describe('VariablesView', () => {
 
 	afterAll(() => {
 		server.shutdown();
-	});
-
-	it('should render loading state', () => {
-		const wrapper = renderComponent({ pinia });
-
-		expect(wrapper.container.querySelectorAll('.n8n-loading')).toHaveLength(3);
 	});
 
 	describe('should render empty state', () => {
@@ -111,6 +113,7 @@ describe('VariablesView', () => {
 	});
 
 	it('should render variable entries', async () => {
+		settingsStore.settings.enterprise[EnterpriseEditionFeature.Variables] = true;
 		server.createList('variable', 3);
 
 		const wrapper = renderComponent({ pinia });

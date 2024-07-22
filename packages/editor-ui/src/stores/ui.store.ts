@@ -179,7 +179,6 @@ export const useUIStore = defineStore(STORES.UI, () => {
 	const lastSelectedNode = ref<string | null>(null);
 	const lastSelectedNodeOutputIndex = ref<number | null>(null);
 	const lastSelectedNodeEndpointUuid = ref<string | null>(null);
-	const lastSelectedNodeConnection = ref<Connection | null>(null);
 	const nodeViewOffsetPosition = ref<[number, number]>([0, 0]);
 	const nodeViewMoveInProgress = ref<boolean>(false);
 	const selectedNodes = ref<INodeUi[]>([]);
@@ -189,6 +188,11 @@ export const useUIStore = defineStore(STORES.UI, () => {
 	const bannerStack = ref<BannerName[]>([]);
 	const pendingNotificationsForViews = ref<{ [key in VIEWS]?: NotificationOptions[] }>({});
 	const isCreateNodeActive = ref<boolean>(false);
+
+	// Last interacted with - Canvas v2 specific
+	const lastInteractedWithNodeConnection = ref<Connection | null>(null);
+	const lastInteractedWithNodeHandle = ref<string | null>(null);
+	const lastInteractedWithNodeId = ref<string | null>(null);
 
 	const settingsStore = useSettingsStore();
 	const workflowsStore = useWorkflowsStore();
@@ -273,6 +277,14 @@ export const useUIStore = defineStore(STORES.UI, () => {
 		if (lastSelectedNode.value) {
 			return workflowsStore.getNodeByName(lastSelectedNode.value);
 		}
+		return null;
+	});
+
+	const lastInteractedWithNode = computed(() => {
+		if (lastInteractedWithNodeId.value) {
+			return workflowsStore.getNodeById(lastInteractedWithNodeId.value);
+		}
+
 		return null;
 	});
 
@@ -601,6 +613,12 @@ export const useUIStore = defineStore(STORES.UI, () => {
 		delete pendingNotificationsForViews.value[view];
 	};
 
+	function resetLastInteractedWith() {
+		lastInteractedWithNodeConnection.value = null;
+		lastInteractedWithNodeHandle.value = null;
+		lastInteractedWithNodeId.value = null;
+	}
+
 	return {
 		appliedTheme,
 		logo,
@@ -622,7 +640,10 @@ export const useUIStore = defineStore(STORES.UI, () => {
 		selectedNodes,
 		bannersHeight,
 		lastSelectedNodeEndpointUuid,
-		lastSelectedNodeConnection,
+		lastInteractedWithNodeConnection,
+		lastInteractedWithNodeHandle,
+		lastInteractedWithNodeId,
+		lastInteractedWithNode,
 		nodeViewOffsetPosition,
 		nodeViewMoveInProgress,
 		nodeViewInitialized,
@@ -671,6 +692,7 @@ export const useUIStore = defineStore(STORES.UI, () => {
 		clearBannerStack,
 		setNotificationsForView,
 		deleteNotificationsForView,
+		resetLastInteractedWith,
 	};
 });
 
