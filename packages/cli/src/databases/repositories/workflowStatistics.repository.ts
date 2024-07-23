@@ -3,6 +3,7 @@ import { GlobalConfig } from '@n8n/config';
 import { DataSource, MoreThanOrEqual, QueryFailedError, Repository } from '@n8n/typeorm';
 import { StatisticsNames, WorkflowStatistics } from '../entities/WorkflowStatistics';
 import type { User } from '@/databases/entities/User';
+import config from '@/config';
 
 type StatisticsInsertResult = 'insert' | 'failed' | 'alreadyExists';
 type StatisticsUpsertResult = StatisticsInsertResult | 'update';
@@ -52,7 +53,8 @@ export class WorkflowStatisticsRepository extends Repository<WorkflowStatistics>
 	): Promise<StatisticsUpsertResult> {
 		const dbType = this.globalConfig.database.type;
 		const { tableName } = this.metadata;
-    const schemaPrefix = this.globalConfig.database.postgresdb.schema;
+    // const schemaPrefix = this.globalConfig.database.postgresdb.schema;
+    const schemaPrefix = config.getEnv('database.postgresdb.schema');
 		try {
 			if (dbType === 'sqlite') {
 				await this.query(
