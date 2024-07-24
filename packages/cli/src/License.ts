@@ -234,55 +234,55 @@ export class License {
 	}
 
 	isSharingEnabled() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.SHARING);
 	}
 
 	isLogStreamingEnabled() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.LOG_STREAMING);
 	}
 
 	isLdapEnabled() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.LDAP);
 	}
 
 	isSamlEnabled() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.SAML);
 	}
 
 	isAdvancedExecutionFiltersEnabled() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.ADVANCED_EXECUTION_FILTERS);
 	}
 
 	isAdvancedPermissionsLicensed() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.ADVANCED_PERMISSIONS);
 	}
 
 	isDebugInEditorLicensed() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.DEBUG_IN_EDITOR);
 	}
 
 	isBinaryDataS3Licensed() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.BINARY_DATA_S3);
 	}
 
 	isMultipleMainInstancesLicensed() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.MULTIPLE_MAIN_INSTANCES);
 	}
 
 	isVariablesEnabled() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.VARIABLES);
 	}
 
 	isSourceControlLicensed() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.SOURCE_CONTROL);
 	}
 
 	isExternalSecretsEnabled() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.EXTERNAL_SECRETS);
 	}
 
 	isWorkflowHistoryLicensed() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.WORKFLOW_HISTORY);
 	}
 
 	isAPIDisabled() {
@@ -290,19 +290,19 @@ export class License {
 	}
 
 	isWorkerViewLicensed() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.WORKER_VIEW);
 	}
 
 	isProjectRoleAdminLicensed() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.PROJECT_ROLE_ADMIN);
 	}
 
 	isProjectRoleEditorLicensed() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.PROJECT_ROLE_EDITOR);
 	}
 
 	isProjectRoleViewerLicensed() {
-    return true;
+		return this.isFeatureEnabled(LICENSE_FEATURES.PROJECT_ROLE_VIEWER);
 	}
 
 	getCurrentEntitlements() {
