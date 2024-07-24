@@ -141,11 +141,11 @@ export class FrontendService {
 			},
 			sso: {
 				saml: {
-					loginEnabled: true,
+					loginEnabled: false,
 					loginLabel: '',
 				},
 				ldap: {
-					loginEnabled: true,
+					loginEnabled: false,
 					loginLabel: '',
 				},
 			},
